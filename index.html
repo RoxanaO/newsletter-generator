@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Free HTML newsletter generator for online stores: pick a palette, add your products and copy code that works in Outlook, Gmail and dark mode.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Newsletter Generator">
+<meta property="og:description" content="Free HTML newsletter generator for online stores. Pick a palette, add your products, copy the code.">
+<title>Newsletter Generator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: slim top bar, form column on the left, sticky live preview on the right. */
+:root {
+  --bg: #f5f3f7;
+  --surface: #ffffff;
+  --field: #fbfafc;
+  --fg: #1f1b24;
+  --muted: #655e6f;
+  --line: #e1dce8;
+  --accent: #7a2a62;
+  --accent-ink: #ffffff;
+  --ok: #1f7a4d;
+  --warn: #9a5200;
+  --tip: #36597a;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15121a; --surface: #1d1923; --field: #17141d; --fg: #efeaf4; --muted: #a79fb3;
+    --line: #322c3b; --accent: #d98ac0; --accent-ink: #1a0f16; --ok: #5bc796; --warn: #e3a24a; --tip: #8db8e0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15121a; --surface: #1d1923; --field: #17141d; --fg: #efeaf4; --muted: #a79fb3;
+  --line: #322c3b; --accent: #d98ac0; --accent-ink: #1a0f16; --ok: #5bc796; --warn: #e3a24a; --tip: #8db8e0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.shell { max-width: 1280px; margin: 0 auto; display: grid; gap: 20px; }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 58ch; }
+.grid { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.controls { display: grid; }
+details { border-bottom: 1px solid var(--line); }
+details:last-child { border-bottom: 0; }
+summary {
+  cursor: pointer; padding: 14px 16px; font-family: var(--font-display); font-weight: 700; font-size: 16px;
+  list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--font-mono); color: var(--muted); }
+details[open] > summary::after { content: "\2212"; }
+summary:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.fields { display: grid; gap: 12px; padding: 0 16px 16px; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; color: var(--muted); min-width: 0; }
+input[type="text"], input[type="url"], input[type="email"], select, textarea {
+  width: 100%; font: inherit; font-size: 14px; color: var(--fg); background: var(--field);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-width: 0;
+}
+textarea { resize: vertical; line-height: 1.45; }
+input[type="color"] { width: 100%; height: 38px; padding: 2px; background: var(--field); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.prod { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 10px; background: var(--field); }
+.prod-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.prod-head strong { font-family: var(--font-display); font-size: 14px; }
+.check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+.presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.preset { font: inherit; font-size: 12px; font-weight: 500; color: var(--fg); background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; cursor: pointer; display: grid; gap: 6px; justify-items: center; }
+.preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.sw { display: flex; width: 100%; height: 22px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(0,0,0,.12); }
+.sw i { flex: 1; }
+
+.stage { position: sticky; top: env(safe-area-inset-top, 0px); display: grid; gap: 0; overflow: hidden; }
+@media (max-width: 900px) { .stage { position: static; } }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; font-weight: 500; padding: 7px 12px; background: transparent; color: var(--muted); border: 0; border-right: 1px solid var(--line); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.primary { font: inherit; font-size: 14px; font-weight: 600; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.primary:active { transform: translateY(1px); }
+.well { background: var(--line); padding: 16px; display: flex; justify-content: center; gap: 16px; height: min(78vh, 900px); overflow: hidden; }
+.fig { margin: 0; width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fig figcaption { font-size: 12px; font-weight: 600; color: var(--muted); text-align: center; letter-spacing: .04em; text-transform: uppercase; }
+.dev { flex: 1; min-height: 0; background: #fff; border-radius: 4px; overflow: hidden; }
+.dev iframe { border: 0; width: 100%; height: 100%; display: block; background: #fff; }
+.well.mobile .fig { max-width: 375px; }
+.well:not(.mobile):not(.compare):not(.dark2) { overflow-x: auto; }
+.well:not(.mobile):not(.compare):not(.dark2) .fig { min-width: 700px; margin-inline: auto; }
+.well.compare, .well.dark2 { overflow: auto; flex-wrap: wrap; align-content: flex-start; }
+.well.compare .fig, .well.dark2 .fig { flex: none; height: 100%; }
+.well.compare .fig, .well.dark2 #figB { width: 262px; }
+.well.dark2 #figA { width: 420px; }
+.well.compare .dev, .well.dark2 .dev { position: relative; }
+.well.compare .dev iframe, .well.dark2 .dev iframe { position: absolute; top: 0; left: 0; transform-origin: top left; }
+.well.compare .dev iframe, .well.dark2 #figB .dev iframe { width: 375px; height: calc(100% / .7); transform: scale(.7); }
+.well.dark2 #figA .dev iframe { width: 700px; height: calc(100% / .6); transform: scale(.6); }
+.codepane { display: none; padding: 12px; gap: 12px; }
+.codepane textarea { font-family: var(--font-mono); font-size: 12px; height: 380px; white-space: pre; overflow: auto; }
+.codepane.on { display: grid; }
+.checks { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.checks li { display: flex; gap: 8px; align-items: baseline; }
+.checks .tag { font-family: var(--font-mono); font-size: 11px; font-weight: 500; flex: none; min-width: 5.2em; }
+.checks .ok .tag { color: var(--ok); }
+.checks .warn .tag { color: var(--warn); }
+.checks .tip .tag { color: var(--tip); }
+.status { font-size: 12px; color: var(--muted); min-height: 1.2em; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.about { max-width: 70ch; display: grid; gap: 10px; padding-top: 8px; }
+.about h2 { font-family: var(--font-display); font-size: 20px; margin: 0; }
+.about p { margin: 0; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header class="top">
+    <h1>Newsletter generator</h1>
+    <p class="lede">Pick a palette, fill in your texts and products, then preview the email on desktop, mobile and in dark mode. When you are done, copy the HTML into your email platform.</p>
+  </header>
+
+  <div class="grid">
+    <div class="panel controls" id="controls">
+      <details open>
+        <summary>Palette &amp; brand</summary>
+        <div class="fields">
+          <div class="presets" id="presets" role="group" aria-label="Palettes"></div>
+          <div class="row3">
+            <label for="base">Background<input type="color" id="base" value="#fce7e7"></label>
+            <label for="accent">Accent<input type="color" id="accent" value="#c1235f"></label>
+            <label for="ink">Button<input type="color" id="ink" value="#000000"></label>
+          </div>
+          <p class="hint">The email uses a single flat background color, no gradients. Dark mode colors are derived automatically from these three colors.</p>
+          <label for="brand">Brand name<input type="text" id="brand" value="Aurora Beauty"></label>
+          <label for="logo">Logo URL (optional)<input type="url" id="logo" placeholder="https://.../logo.png"></label>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Header &amp; main message</summary>
+        <div class="fields">
+          <label for="preheader">Preview text (preheader)<input type="text" id="preheader" value="Seasonal savings on your favorite products, until Sunday only"></label>
+          <label for="badge">Badge<input type="text" id="badge" value="20% off"></label>
+          <label for="headline">Headline<input type="text" id="headline" value="Your autumn routine starts here"></label>
+          <label for="sub">Subheadline<textarea id="sub" rows="2">Four picks for sensitive skin, now at a reduced price.</textarea></label>
+          <label for="headerImg">Header image, 700px wide (optional)<input type="url" id="headerImg" placeholder="https://.../header.png"></label>
+          <label for="heroImg">Hero image, 700px wide (optional)<input type="url" id="heroImg" placeholder="https://.../discount.png"></label>
+          <p class="hint">Without images, the header and discount area are built from text, so you do not need ready-made graphics.</p>
+          <div class="row2">
+            <label for="ctatext">Main button text<input type="text" id="ctatext" value="Shop all products"></label>
+            <label for="ctaurl">Main button link<input type="url" id="ctaurl" placeholder="https://..."></label>
+          </div>
+        </div>
+      </details>
+
+      <details open>
+        <summary>Products</summary>
+        <div class="fields" id="products"></div>
+      </details>
+
+      <details>
+        <summary>Footer &amp; contact</summary>
+        <div class="fields">
+          <label for="platform">Sending platform
+            <select id="platform">
+              <option value="generic">Generic (&#123;&#123;unsubscribe_url&#125;&#125;)</option>
+              <option value="mailchimp">Mailchimp</option>
+              <option value="brevo">Brevo</option>
+            </select>
+          </label>
+          <p class="hint">Choose your platform so the unsubscribe and “view in browser” links use its merge tags. Check the tags in your platform before sending.</p>
+          <label for="followtxt">Social media invitation text<input type="text" id="followtxt" value="Beauty continues on social media too. Come get to know us online."></label>
+          <div class="row2">
+            <label for="fb">Facebook<input type="url" id="fb" placeholder="https://..."></label>
+            <label for="ig">Instagram<input type="url" id="ig" placeholder="https://..."></label>
+          </div>
+          <label for="tt">TikTok<input type="url" id="tt" placeholder="https://..."></label>
+          <div class="row2">
+            <label for="phone">Phone<input type="text" id="phone" value="+00 000 000 000"></label>
+            <label for="mail">Email<input type="email" id="mail" value="hello@example.com"></label>
+          </div>
+          <label for="site">Website<input type="text" id="site" value="www.example.com"></label>
+          <label for="address">Address (required in footer)<input type="text" id="address" value="10 Example Street, City, Country"></label>
+        </div>
+      </details>
+    </div>
+
+    <div class="panel stage">
+      <div class="bar">
+        <div class="seg" role="group" aria-label="Preview mode">
+          <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+          <button type="button" data-view="mobile" aria-pressed="false">Mobile</button>
+          <button type="button" data-view="dark" aria-pressed="false">Dark mode</button>
+          <button type="button" data-view="compare" aria-pressed="false">Compare</button>
+          <button type="button" data-view="code" aria-pressed="false">HTML code</button>
+        </div>
+        <button type="button" class="primary" id="copy">Copy HTML</button>
+      </div>
+      <div class="well" id="well">
+        <figure class="fig" id="figA"><figcaption id="capA" hidden>Light</figcaption><div class="dev"><iframe id="frame" title="Email preview" sandbox=""></iframe></div></figure>
+        <figure class="fig" id="figB" hidden><figcaption id="capB">Dark mode</figcaption><div class="dev"><iframe id="frame2" title="Email preview in dark mode" sandbox=""></iframe></div></figure>
+      </div>
+      <div class="codepane" id="codepane">
+        <label for="code">Email HTML code<textarea id="code" readonly spellcheck="false"></textarea></label>
+        <ul class="checks" id="checks"></ul>
+      </div>
+      <div class="bar" style="border-top:1px solid var(--line);border-bottom:0;">
+        <span class="status" id="status" role="status"></span>
+        <p class="note" id="size"></p>
+      </div>
+    </div>
+  </div>
+
+  <section class="about">
+    <h2>How it works</h2>
+    <p>Choose a color palette, add your brand name, headline and up to six products, and the newsletter updates as you type. Check it on desktop, mobile and in dark mode, then copy the HTML.</p>
+    <p>The code is built with email-safe tables, inline styles and an Outlook fallback, so it renders consistently in Gmail, Outlook and Apple Mail. Paste it into any email platform that accepts custom HTML, such as Mailchimp or Brevo.</p>
+    <p>Everything runs in your browser. Your texts and links are not sent anywhere.</p>
+  </section>
+</div>
+
+<script>
+/* ===== PURE: email builder (no DOM) ===== */
+var O = '<!' + '--';
+var G_IF = O + '[if (gte mso 9)|(IE)]>', G_END = '<![endif]' + '--' + '>';
+var PLAT = {
+  generic:   { unsub: '{{unsubscribe_url}}', view: '{{view_in_browser_url}}' },
+  mailchimp: { unsub: '*|UNSUB|*', view: '*|ARCHIVE|*' },
+  brevo:     { unsub: '{{ unsubscribe }}', view: '{{ mirror }}' }
+};
+var PRESETS = [
+  { name: 'Blush',    base: '#fce7e7', accent: '#c1235f', ink: '#000000' },
+  { name: 'Sage',   base: '#e4eddd', accent: '#3f6e4b', ink: '#1f2d22' },
+  { name: 'Sand',    base: '#f4e9d9', accent: '#a5562b', ink: '#2a1f14' },
+  { name: 'Lavender',  base: '#ebe4f5', accent: '#6a3fa0', ink: '#1d1530' }
+];
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function rich(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
+function lines(s) { return String(s || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); }
+function rgb(hex) { var n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function hex2(n) { var s = n.toString(16); return s.length < 2 ? '0' + s : s; }
+function lerp(a, b, t) { var A = rgb(a), B = rgb(b); return '#' + A.map(function (v, i) { return hex2(Math.round(v + (B[i] - v) * t)); }).join(''); }
+function onColor(hex) { var c = rgb(hex); return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 165 ? '#111111' : '#ffffff'; }
+function href(u) { return esc(u && u.trim() ? u.trim() : '#'); }
+function has(u) { return !!(u && u.trim()); }
+
+function palette(f) {
+  var light = lerp(f.base, '#ffffff', 0.6), deep = lerp(f.base, f.accent, 0.14);
+  return {
+    light: light, base: f.base, deep: deep, hero: lerp(f.base, '#ffffff', 0.8),
+    at: function () { return f.base; },
+    darkSec: lerp(f.base, '#000000', 0.84), darkPrice: lerp(f.accent, '#ffffff', 0.5)
+  };
+}
+
+var FF = 'font-family:Arial, Helvetica, sans-serif;';
+var SERIF = "font-family:Georgia, 'Times New Roman', serif;";
+
+function productCol(p, f, P) {
+  var link = href(p.url);
+  var img = has(p.img)
+    ? '<a href="' + link + '" target="_blank"><img src="' + esc(p.img.trim()) + '" width="240" alt="' + esc(p.name) + '" border="0" style="display:block; width:100%; max-width:240px; height:auto; margin:0 auto;" /></a>'
+    : '<table role="presentation" width="240" align="center" border="0" cellspacing="0" cellpadding="0" style="width:240px; max-width:100%;"><tr><td align="center" valign="middle" height="200" bgcolor="' + P.hero + '" class="dm-sec" style="background-color:' + P.hero + '; height:200px; border-radius:24px; ' + FF + ' font-size:13px; color:' + f.accent + ';">Product image</td></tr></table>';
+  var items = lines(p.bul);
+  var checks = items.map(function (b, i) {
+    var last = i === items.length - 1, pb = last ? '0' : '15px';
+    return '<tr>\n' +
+      '<td width="17" valign="top" class="dm-price" style="padding:0 6px ' + pb + ' 0; ' + FF + ' font-size:14px; line-height:18px; font-weight:bold; color:' + f.accent + ';">&#10003;</td>\n' +
+      '<td align="left" valign="top" class="dm-text" style="' + (last ? '' : 'padding-bottom:15px; ') + FF + ' font-size:14px; line-height:18px; color:#000000; text-align:left;">' + rich(b) + '</td>\n</tr>';
+  }).join('\n');
+  return '<div class="column" style="width:100%; max-width:293px; display:inline-block; vertical-align:top;">\n' +
+    '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">\n<tr>\n<td width="2%">&nbsp;</td>\n' +
+    '<td width="96%" align="center" valign="top" bgcolor="#ffffff" class="dm-card" style="background-color:#ffffff; border-radius:40px; padding:20px 15px 25px 15px;">\n' +
+    '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">\n' +
+    '<tr><td align="center" valign="top" style="font-size:1px; line-height:1px;">' + img + '</td></tr>\n' +
+    '<tr><td align="center" valign="top" class="dm-text" style="padding-top:20px; ' + FF + ' font-size:16px; line-height:22px; color:#000000; font-weight:bold; text-transform:uppercase;">' + esc(p.name) + '</td></tr>\n' +
+    '<tr><td align="center" valign="top" style="padding-top:20px;"><table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">\n' + checks + '\n</table></td></tr>\n' +
+    '<tr><td align="center" valign="top" class="dm-price" style="padding-top:30px; ' + FF + ' font-size:20px; line-height:26px; color:' + f.accent + '; font-weight:bold;">' + esc(p.price) + '</td></tr>\n' +
+    '<tr><td align="center" valign="top" style="padding-top:25px;"><table role="presentation" width="200" align="center" border="0" cellspacing="0" cellpadding="0" style="width:200px; max-width:100%;"><tr>' +
+    '<td align="center" valign="middle" bgcolor="#fffdfb" class="dm-btn-light" style="background-color:#fffdfb; border:1px solid ' + f.ink + '; border-radius:25px;"><a href="' + link + '" target="_blank" class="dm-btn-light-text" style="display:block; padding:6px 0; ' + FF + ' font-size:16px; line-height:30px; font-weight:bold; color:#34303d; text-decoration:none;">Shop now</a></td>' +
+    '</tr></table></td></tr>\n</table>\n</td>\n<td width="2%">&nbsp;</td>\n</tr>\n' +
+    '<tr><td colspan="3" height="20" style="height:20px; font-size:1px; line-height:1px;">&nbsp;</td></tr>\n</table>\n</div>';
+}
+
+function productRow(pair, from, to, first, f, P) {
+  var w = pair.length === 2 ? 588 : 294;
+  var inner = pair.map(function (p, i) {
+    return (i === 0 ? G_IF + '\n<table role="presentation" width="' + w + '" align="center" cellpadding="0" cellspacing="0" border="0">\n<tr>\n<td width="294" valign="top">\n' + G_END
+                    : G_IF + '\n</td>\n<td width="294" valign="top">\n' + G_END) + '\n' + productCol(p, f, P);
+  }).join('\n') + '\n' + G_IF + '\n</td>\n</tr>\n</table>\n' + G_END;
+  return '<tr>\n<td align="center" valign="top" bgcolor="' + from + '" class="dm-sec" style="background-color:' + from + '; padding-top:' + (first ? '20px' : '0') + ';">\n' +
+    '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">\n<tr>\n<td width="4%">&nbsp;</td>\n<td width="92%" align="center" valign="top" style="text-align:center; font-size:0;">\n' +
+    inner + '\n</td>\n<td width="4%">&nbsp;</td>\n</tr>\n</table>\n</td>\n</tr>';
+}
+
+function buildEmail(f, mode) {
+  var P = palette(f), plat = PLAT[f.platform] || PLAT.generic;
+  var darkCss = '.dm-page { background-color:#121212 !important; } .dm-sec { background-color:' + P.darkSec + ' !important; background-image:none !important; } .dm-card { background-color:#2f2f2f !important; } .dm-text { color:#f2f2f2 !important; } .dm-muted { color:#bdbdbd !important; } .dm-price { color:' + P.darkPrice + ' !important; } .dm-btn-light { background-color:#2f2f2f !important; border-color:#f2f2f2 !important; } .dm-btn-light-text { color:#f2f2f2 !important; } .dm-btn-dark { background-color:#f2f2f2 !important; border-color:#f2f2f2 !important; } .dm-btn-dark-text { color:#000000 !important; } .dm-link { color:#f2f2f2 !important; }';
+  var ogs = '[data-ogsb] .dm-page { background-color:#121212 !important; }\n  [data-ogsb] .dm-sec { background-color:' + P.darkSec + ' !important; background-image:none !important; }\n  [data-ogsb] .dm-card { background-color:#2f2f2f !important; }\n  [data-ogsb] .dm-btn-light { background-color:#2f2f2f !important; }\n  [data-ogsb] .dm-btn-dark { background-color:#f2f2f2 !important; }\n  [data-ogsc] .dm-text { color:#f2f2f2 !important; }\n  [data-ogsc] .dm-muted { color:#bdbdbd !important; }\n  [data-ogsc] .dm-price { color:' + P.darkPrice + ' !important; }\n  [data-ogsc] .dm-btn-light-text { color:#f2f2f2 !important; }\n  [data-ogsc] .dm-btn-dark-text { color:#000000 !important; }\n  [data-ogsc] .dm-link { color:#f2f2f2 !important; }';
+  var darkBlock = mode === 'export' ? '  @media (prefers-color-scheme: dark) {\n    ' + darkCss.replace(/ \} /g, ' }\n    ') + '\n  }\n\n  ' + ogs : (mode === 'dark' ? darkCss : '');
+
+  var header = has(f.headerImg)
+    ? '<tr><td align="center" valign="top" style="font-size:1px; line-height:1px;"><a href="#" target="_blank"><img src="' + esc(f.headerImg.trim()) + '" width="700" alt="' + esc(f.brand) + '" border="0" style="display:block; width:100%; max-width:700px; height:auto;" /></a></td></tr>'
+    : '<tr><td align="center" valign="top" bgcolor="' + f.base + '" class="dm-sec dm-text" style="background-color:' + f.base + '; padding:30px 5% 10px 5%;">' +
+      (has(f.logo)
+        ? '<img src="' + esc(f.logo.trim()) + '" alt="' + esc(f.brand) + '" height="44" border="0" style="display:block; height:44px; width:auto; margin:0 auto;" />'
+        : '<span style="' + SERIF + ' font-size:26px; line-height:32px; letter-spacing:5px; text-transform:uppercase; color:' + f.ink + ';">' + esc(f.brand) + '</span>') + '</td></tr>';
+
+  var badge = has(f.badge)
+    ? '<table role="presentation" align="center" border="0" cellspacing="0" cellpadding="0"><tr><td bgcolor="' + f.accent + '" style="background-color:' + f.accent + '; border-radius:20px; padding:7px 18px; ' + FF + ' font-size:12px; line-height:16px; font-weight:bold; letter-spacing:2px; text-transform:uppercase; color:' + onColor(f.accent) + ';">' + esc(f.badge) + '</td></tr></table>'
+    : '';
+  var hero = has(f.heroImg)
+    ? '<tr><td align="center" valign="top" style="font-size:1px; line-height:1px;"><img src="' + esc(f.heroImg.trim()) + '" width="700" alt="' + esc(f.headline) + '" border="0" style="display:block; width:100%; max-width:700px; height:auto;" /></td></tr>'
+    : '<tr><td align="center" valign="top" bgcolor="' + f.base + '" class="dm-sec" style="background-color:' + f.base + '; padding:20px 8% 34px 8%;">' + badge +
+      '<h1 class="dm-text" style="margin:18px 0 12px 0; ' + SERIF + ' font-size:38px; line-height:44px; font-weight:normal; color:#000000;">' + esc(f.headline) + '</h1>' +
+      '<p class="dm-muted" style="margin:0; ' + FF + ' font-size:17px; line-height:25px; color:#555555;">' + esc(f.sub) + '</p></td></tr>';
+
+  var on = f.products.filter(function (p) { return p.on; });
+  var nRows = Math.ceil(on.length / 2) || 1, rows = [];
+  for (var i = 0; i < on.length; i += 2) {
+    var r = i / 2;
+    rows.push(productRow(on.slice(i, i + 2), P.at(r / nRows), P.at((r + 1) / nRows), r === 0, f, P));
+  }
+  var tail = P.at(1);
+  var sec = function (inner, pad) { return '<tr>\n<td align="center" valign="top" bgcolor="' + tail + '" class="dm-sec dm-text" style="background-color:' + tail + '; ' + pad + '">' + inner + '</td>\n</tr>'; };
+
+  var socials = [['Facebook', f.fb], ['Instagram', f.ig], ['TikTok', f.tt]].filter(function (s) { return has(s[1]); }).map(function (s) {
+    return '<td style="padding:0 5px;"><table role="presentation" border="0" cellspacing="0" cellpadding="0"><tr><td align="center" bgcolor="#fffdfb" class="dm-btn-light" style="background-color:#fffdfb; border:1px solid ' + f.ink + '; border-radius:20px;"><a href="' + esc(s[1].trim()) + '" target="_blank" class="dm-btn-light-text" style="display:block; padding:6px 16px; ' + FF + ' font-size:14px; line-height:20px; font-weight:bold; color:#34303d; text-decoration:none;">' + s[0] + '</a></td></tr></table></td>';
+  }).join('');
+  var followRows = (has(f.followtxt) ? sec(esc(f.followtxt), 'padding:20px 5% 14px 5%; ' + FF + ' font-size:17px; line-height:22px; color:#000000; font-weight:bold;') : '') +
+    (socials ? '\n<tr>\n<td align="center" valign="top" bgcolor="' + tail + '" class="dm-sec" style="background-color:' + tail + '; padding:0 5% 10px 5%;"><table role="presentation" align="center" border="0" cellspacing="0" cellpadding="0"><tr>' + socials + '</tr></table></td>\n</tr>' : '');
+
+  var contact = [];
+  if (has(f.phone)) contact.push('<strong>tel:</strong> ' + esc(f.phone));
+  if (has(f.mail)) contact.push('<strong>email:</strong> <a href="mailto:' + esc(f.mail.trim()) + '" target="_blank" class="dm-link" style="text-decoration:underline; color:#000000;">' + esc(f.mail) + '</a>');
+  if (has(f.site)) contact.push('<strong>website:</strong> <a href="https://' + esc(f.site.trim().replace(/^https?:\/\//, '')) + '" target="_blank" class="dm-link" style="text-decoration:underline; color:#000000;">' + esc(f.site) + '</a>');
+
+  var ctaBg = f.ink, ctaFg = onColor(f.ink);
+  return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n' +
+    '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">\n<head>\n' +
+    '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1" />\n<meta http-equiv="X-UA-Compatible" content="IE=edge" />\n<meta name="x-apple-disable-message-reformatting" />\n<meta name="color-scheme" content="light dark" />\n<meta name="supported-color-schemes" content="light dark" />\n' +
+    '<title>' + esc(f.brand) + '</title>\n' +
+    O + '[if gte mso 9]>\n<xml>\n  <o:OfficeDocumentSettings>\n    <o:AllowPNG/>\n    <o:PixelsPerInch>96</o:PixelsPerInch>\n  </o:OfficeDocumentSettings>\n</xml>\n<![endif]' + '--' + '>\n' +
+    '<style type="text/css">\n  /* Resets */\n  body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }\n  table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }\n  img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; }\n  body { margin:0 !important; padding:0 !important; width:100% !important; }\n  a[x-apple-data-detectors] { color:inherit !important; text-decoration:none !important; font-size:inherit !important; font-family:inherit !important; font-weight:inherit !important; line-height:inherit !important; }\n\n' +
+    darkBlock + '\n</style>\n</head>\n' +
+    '<body class="dm-page" style="margin:0; padding:0; background-color:#ffffff;">\n\n' +
+    O + ' Preheader (hidden preview text) ' + '--' + '>\n<div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden; mso-hide:all;">\n  ' + esc(f.preheader) + '\n  &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;\n</div>\n\n' +
+    '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#ffffff" class="dm-page" style="background-color:#ffffff;">\n<tr>\n<td align="center" valign="top">\n\n' +
+    G_IF + '\n<table role="presentation" width="700" align="center" cellpadding="0" cellspacing="0" border="0">\n<tr>\n<td>\n' + G_END + '\n' +
+    '<div style="width:100%; max-width:700px; margin:0 auto;">\n<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">\n\n' +
+    header + '\n\n' + hero + '\n\n' + rows.join('\n\n') + '\n\n' +
+    '<tr>\n<td align="center" valign="top" bgcolor="' + tail + '" class="dm-sec" style="background-color:' + tail + '; padding:20px 5% 20px 5%;">\n<table role="presentation" width="260" align="center" border="0" cellspacing="0" cellpadding="0" style="width:260px; max-width:100%;">\n<tr>\n<td align="center" valign="middle" bgcolor="' + ctaBg + '" class="dm-btn-dark" style="background-color:' + ctaBg + '; border:1px solid ' + ctaBg + '; border-radius:25px;"><a href="' + href(f.ctaurl) + '" target="_blank" class="dm-btn-dark-text" style="display:block; padding:10px 0; ' + FF + ' font-size:18px; line-height:30px; color:' + ctaFg + '; text-decoration:none;">' + esc(f.ctatext) + '</a></td>\n</tr>\n</table>\n</td>\n</tr>\n\n' +
+    followRows + '\n\n' +
+    (contact.length ? sec('Contact us', 'padding:30px 5% 10px 5%; ' + FF + ' font-size:20px; line-height:26px; color:#000000; font-weight:bold;') + '\n' + sec(contact.join('<br />\n'), 'padding:0 5% 20px 5%; ' + FF + ' font-size:17px; line-height:26px; color:#000000;') : '') + '\n\n' +
+    '<tr>\n<td align="center" valign="top" bgcolor="' + tail + '" class="dm-sec dm-muted" style="background-color:' + tail + '; padding:10px 5% 30px 5%; ' + FF + ' font-size:12px; line-height:18px; color:#555555;">\nYou are receiving this email because you subscribed to updates from ' + esc(f.brand) + '.<br />\n' + esc(f.brand) + ' &middot; ' + esc(f.address) + '<br />\n<a href="' + esc(plat.unsub) + '" target="_blank" class="dm-link" style="text-decoration:underline; color:#555555;">Unsubscribe</a> &nbsp;|&nbsp; <a href="' + esc(plat.view) + '" target="_blank" class="dm-link" style="text-decoration:underline; color:#555555;">View in browser</a>\n</td>\n</tr>\n\n' +
+    '</table>\n</div>\n' + G_IF + '\n</td>\n</tr>\n</table>\n' + G_END + '\n\n</td>\n</tr>\n</table>\n</body>\n</html>';
+}
+
+function checkEmail(f, html) {
+  var out = [];
+  var on = f.products.filter(function (p) { return p.on; });
+  var noImg = on.filter(function (p) { return !has(p.img); }).length;
+  out.push(noImg ? ['warn', noImg + ' product(s) without an image URL. Add a link to a hosted image (https).'] : ['ok', 'All products have an image.']);
+  var kb = Math.round(new TextEncoder().encode(html).length / 1024 * 10) / 10;
+  out.push(kb > 90 ? ['warn', 'Size ' + kb + ' KB. Gmail clips emails over ~102 KB.'] : ['ok', 'Size ' + kb + ' KB, under the Gmail clipping limit of ~102 KB.']);
+  var empty = on.filter(function (p) { return !has(p.url); }).length + (has(f.ctaurl) ? 0 : 1);
+  out.push(empty ? ['warn', empty + ' button(s) without a link will point to “#”. Fill in the URLs.'] : ['ok', 'All buttons have a link.']);
+  var pl = (f.preheader || '').length;
+  out.push(pl < 40 || pl > 90 ? ['warn', 'Preheader is ' + pl + ' characters. Recommended: 40-90.'] : ['ok', 'Preheader is ' + pl + ' characters.']);
+  out.push(has(f.address) ? ['ok', 'Footer address is filled in.'] : ['warn', 'Footer address is missing; many platforms require it.']);
+  out.push(['ok', 'Hybrid columns with an Outlook fallback; dark mode for Apple Mail, the Outlook app and Outlook.com.']);
+  if (on.some(function (p) { return has(p.img); }) || has(f.headerImg) || has(f.heroImg)) out.push(['tip', 'Images with white backgrounds stand out in dark mode. Use transparent PNGs.']);
+  out.push(['tip', 'Desktop Outlook shows square corners on cards and buttons. The content stays the same.']);
+  return { kb: kb, items: out };
+}
+/* ===== END PURE ===== */
+
+var DEFAULTS = [
+  { on: true,  name: 'Velvet lip color', bul: '**Intense hydration** for soft, smooth lips\n**Long-lasting color** with an elegant finish\n**Soothes** and keeps lips comfortable', price: '$29' },
+  { on: true,  name: 'Precision eyeliner', bul: '**Bold color** for a captivating look\n**Smudge-proof** wear all day\n**Defines** the eyes with precise lines', price: '$24' },
+  { on: true,  name: 'Gentle cleansing gel', bul: '**Removes impurities** and excess oil\n**Cleanses gently** without drying the skin\n**Soft, fresh** skin after every wash', price: '$26' },
+  { on: true,  name: 'Hydrating serum', bul: '**Deep hydration** for radiant-looking skin\n**Smoother texture** and a refined finish\n**Healthy glow** that lasts', price: '$42' },
+  { on: false, name: 'Daily day cream', bul: '**Protects** skin throughout the day\n**Absorbs quickly** with no greasy feel\n**Preps** skin for makeup', price: '$34' },
+  { on: false, name: 'Overnight mask', bul: '**Restores** skin while you sleep\n**Long-lasting** hydration\n**Rested-looking** skin by morning', price: '$31' }
+];
+
+function $(id) { return document.getElementById(id); }
+
+(function buildProductFields() {
+  var host = $('products');
+  DEFAULTS.forEach(function (d, i) {
+    var n = i + 1, box = document.createElement('div');
+    box.className = 'prod';
+    box.innerHTML =
+      '<div class="prod-head"><strong>Product ' + n + '</strong><label class="check" for="p' + n + '_on"><input type="checkbox" id="p' + n + '_on"' + (d.on ? ' checked' : '') + '> Show</label></div>' +
+      '<label for="p' + n + '_name">Name<input type="text" id="p' + n + '_name" value="' + esc(d.name) + '"></label>' +
+      '<label for="p' + n + '_bul">Benefits (one per line, **text** for bold)<textarea id="p' + n + '_bul" rows="4">' + esc(d.bul) + '</textarea></label>' +
+      '<div class="row2"><label for="p' + n + '_price">Price<input type="text" id="p' + n + '_price" value="' + esc(d.price) + '"></label>' +
+      '<label for="p' + n + '_url">Product link<input type="url" id="p' + n + '_url" placeholder="https://..."></label></div>' +
+      '<label for="p' + n + '_img">Image URL<input type="url" id="p' + n + '_img" placeholder="https://.../product.jpg"></label>';
+    host.appendChild(box);
+  });
+})();
+
+(function buildPresets() {
+  var host = $('presets');
+  PRESETS.forEach(function (p, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'preset'; b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); b.setAttribute('data-i', i);
+    b.innerHTML = '<span class="sw"><i style="background:' + p.base + '"></i><i style="background:' + p.accent + '"></i><i style="background:' + p.ink + '"></i></span>' + esc(p.name);
+    b.addEventListener('click', function () {
+      $('base').value = p.base; $('accent').value = p.accent; $('ink').value = p.ink;
+      markPreset(i); queue();
+    });
+    host.appendChild(b);
+  });
+})();
+function markPreset(idx) {
+  document.querySelectorAll('.preset').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-i')) === String(idx) ? 'true' : 'false'); });
+}
+
+function readForm() {
+  var f = {};
+  ['brand', 'logo', 'headerImg', 'heroImg', 'base', 'accent', 'ink', 'preheader', 'badge', 'headline', 'sub', 'ctatext', 'ctaurl', 'platform', 'followtxt', 'fb', 'ig', 'tt', 'phone', 'mail', 'site', 'address'].forEach(function (k) { f[k] = $(k).value; });
+  f.products = [1, 2, 3, 4, 5, 6].map(function (n) {
+    return { on: $('p' + n + '_on').checked, name: $('p' + n + '_name').value, bul: $('p' + n + '_bul').value, price: $('p' + n + '_price').value, url: $('p' + n + '_url').value, img: $('p' + n + '_img').value };
+  });
+  return f;
+}
+
+var view = 'desktop', queued = false, lastExport = '';
+var TAGS = { ok: '[ok]', warn: '[warning]', tip: '[tip]' };
+
+function render() {
+  queued = false;
+  var f = readForm();
+  lastExport = buildEmail(f, 'export');
+  var res = checkEmail(f, lastExport);
+  $('size').textContent = res.kb + ' KB';
+  var isCode = view === 'code', isCompare = view === 'compare', isDark = view === 'dark', two = isCompare || isDark;
+  var well = $('well');
+  well.style.display = isCode ? 'none' : 'flex';
+  well.classList.toggle('mobile', view === 'mobile');
+  well.classList.toggle('compare', isCompare);
+  well.classList.toggle('dark2', isDark);
+  $('figB').hidden = !two;
+  $('capA').hidden = !two;
+  $('capA').textContent = isDark ? 'Desktop' : 'Light';
+  $('capB').textContent = isDark ? 'Mobile' : 'Dark mode';
+  $('codepane').classList.toggle('on', isCode);
+  if (isCode) {
+    $('code').value = lastExport;
+    $('checks').innerHTML = res.items.map(function (it) {
+      return '<li class="' + it[0] + '"><span class="tag">' + TAGS[it[0]] + '</span><span>' + esc(it[1]) + '</span></li>';
+    }).join('');
+  } else {
+    $('frame').srcdoc = buildEmail(f, isDark ? 'dark' : 'light');
+    if (two) $('frame2').srcdoc = buildEmail(f, 'dark');
+  }
+}
+function queue() { if (!queued) { queued = true; requestAnimationFrame(render); } }
+
+$('controls').addEventListener('input', function (e) {
+  if (e.target.type === 'color') markPreset(-1);
+  queue();
+});
+$('controls').addEventListener('change', queue);
+function setView(v) {
+  view = v;
+  document.querySelectorAll('.seg button').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-view') === v ? 'true' : 'false'); });
+  render();
+}
+document.querySelectorAll('.seg button').forEach(function (b) {
+  b.addEventListener('click', function () { setView(b.getAttribute('data-view')); });
+});
+
+$('copy').addEventListener('click', function () {
+  var st = $('status');
+  function fallback() {
+    setView('code');
+    var ta = $('code'); ta.focus(); ta.select();
+    st.textContent = 'Code selected. Press Ctrl+C (or Cmd+C) to copy it.';
+  }
+  try {
+    navigator.clipboard.writeText(lastExport).then(function () {
+      st.textContent = 'HTML copied. Paste it into the HTML editor of your email platform.';
+    }, fallback);
+  } catch (e) { fallback(); }
+});
+
+render();
+</script>
+
+</body>
+</html>
